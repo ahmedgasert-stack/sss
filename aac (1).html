@@ -3,578 +3,308 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>كَلِّمْنِي - تطبيق التواصل للأطفال (AAC)</title>
-  
-  <!-- PWA & Mobile Viewport Tags -->
-  <meta name="theme-color" content="#f59e0b">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  
-  <!-- Tailwind CSS & Fonts -->
+  <title>تطبيق كَلِّمْنِي للتواصل (AAC)</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&family=Tajawal:wght@500;700;900&display=swap" rel="stylesheet">
-
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;900&display=swap" rel="stylesheet">
   <style>
-    * {
+    body {
+      font-family: 'Tajawal', sans-serif;
+      touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
       user-select: none;
-      -webkit-user-select: none;
     }
-    body {
-      font-family: 'Cairo', 'Tajawal', system-ui, sans-serif;
-      touch-action: manipulation;
-    }
-    input {
-      user-select: text;
-      -webkit-user-select: text;
-    }
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;
-    }
-    .no-scrollbar {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
-    /* أنيميشن ناعم ومريح للأطفال عند لمس البطاقة */
-    .card-touch {
-      transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.12s ease;
-    }
-    .card-touch:active {
-      transform: scale(0.94);
-      filter: brightness(0.96);
-    }
-    @keyframes speakPulse {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.08); opacity: 0.85; }
-    }
-    .speaking-card {
-      animation: speakPulse 0.4s ease-in-out;
-      outline: 4px solid #f59e0b;
-      outline-offset: 2px;
+    .active-card:active {
+      transform: scale(0.95);
     }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col antialiased">
+<body class="bg-slate-100 text-slate-800 flex flex-col min-h-screen">
 
-  <!-- الشريط العلوي الرئيسي -->
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 px-3 sm:px-6 py-2.5 shadow-sm">
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-2.5">
-        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-white shadow-sm font-black text-xl">
-          🗣️
-        </div>
-        <div>
-          <h1 class="text-lg sm:text-xl font-black text-slate-900 leading-none">
-            كَلِّمْنِي <span class="text-xs bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-full border border-amber-300">لهجة مصرية 🇪🇬</span>
-          </h1>
-          <p class="text-[11px] text-slate-500 font-bold mt-0.5">لوحة التواصل السريع للأطفال</p>
-        </div>
-      </div>
+  <!-- شاشة تفعيل الصوت الأولية للهواتف المحمولة -->
+  <div id="unlockModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl border-4 border-emerald-500">
+      <div class="text-6xl mb-4">🔊</div>
+      <h2 class="text-2xl font-black text-slate-800 mb-2">تفعيل الصوت</h2>
+      <p class="text-slate-600 mb-6 text-sm">تتطلب متصفحات الهواتف المحمولة نقرة أولى لتفعيل نظام النطق والتواصل.</p>
+      <button id="btnUnlock" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-xl rounded-2xl shadow-lg transition-transform">
+        ابدأ التطبيق الآن 🚀
+      </button>
+    </div>
+  </div>
 
-      <!-- مؤشر حالة النطق الصوتي الحي -->
+  <!-- شريط التشخيص المباشر لمعرفة حالة الصوت -->
+  <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-40 px-4 py-2">
+    <div class="flex items-center justify-between mb-1">
       <div class="flex items-center gap-2">
-        <div id="liveStatusBox" class="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-xs">
-          <span id="liveStatusDot" class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-          <span id="liveStatusText">جاهز للنطق</span>
-        </div>
-
-        <button type="button" onclick="testEgyptianVoice()" class="text-xs bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 px-2.5 py-1.5 rounded-xl font-bold border border-slate-300 transition-transform">
-          🔊 تجربة
-        </button>
+        <span class="text-2xl">🗣️</span>
+        <h1 class="text-xl font-black text-slate-800">كَلِّمْنِي (AAC)</h1>
       </div>
+      <button onclick="testSpeech()" class="text-xs bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded-lg font-bold">
+        🔊 تجربة الصوت
+      </button>
+    </div>
+    <div id="statusBar" class="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs py-1 px-3 rounded-lg text-center font-bold">
+      جاهز للنطق... اضغط على أي بطاقة
     </div>
   </header>
 
-  <!-- شريط تجميع وتركيب الجملة المركبة -->
-  <section class="bg-white border-b border-slate-200 px-3 sm:px-6 py-2 shadow-xs">
-    <div class="flex items-center justify-between mb-1.5">
-      <span class="text-xs font-bold text-slate-500 flex items-center gap-1">
-        <span>🧩</span>
-        <span>جملة الطفل:</span>
-      </span>
-      <div class="flex items-center gap-1.5">
-        <button type="button" onclick="undoLastSentenceItem()" class="text-xs font-bold px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-100 active:scale-95 transition-all">
-          ⌫ تراجع
-        </button>
-        <button type="button" onclick="clearFullSentence()" class="text-xs font-bold px-2.5 py-1 rounded-lg text-rose-600 hover:bg-rose-50 active:scale-95 transition-all">
-          مسح ✕
-        </button>
-      </div>
+  <!-- شريط الجملة المركبة -->
+  <section class="bg-white px-3 py-2 border-b border-slate-200 shadow-inner flex items-center gap-2 min-h-[58px]">
+    <div id="sentenceDisplay" class="flex-1 flex gap-2 overflow-x-auto py-1 items-center">
+      <span class="text-slate-400 text-sm italic">اضغط على البطاقات لتكوين جملة هنا...</span>
     </div>
-
-    <div class="flex items-center gap-2 min-h-[58px] p-1.5 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-      <div id="sentenceBuilderList" class="flex items-center gap-1.5 overflow-x-auto flex-1 no-scrollbar py-0.5">
-        <span id="sentencePlaceholder" class="text-slate-400 text-xs sm:text-sm font-medium pr-1">
-          اضغط على البطاقات لتجميع جملة هنا (مثال: "عاوز أشرب" + "شكراً ليك")...
-        </span>
-      </div>
-
-      <button id="btnSpeakSentence" type="button" onclick="speakCompoundSentence()" class="hidden bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-xs sm:text-sm px-3.5 py-2.5 rounded-xl shadow-md shrink-0 flex items-center gap-1 transition-all">
-        <span>انطق الجملة</span> 🔊
-      </button>
-    </div>
+    <button onclick="speakSentence()" class="bg-emerald-600 active:scale-90 text-white p-2.5 rounded-xl font-bold text-sm shadow flex items-center gap-1">
+      <span>انطق</span> 🔊
+    </button>
+    <button onclick="clearSentence()" class="bg-rose-100 text-rose-700 active:scale-90 p-2.5 rounded-xl font-bold text-sm">
+      مسح
+    </button>
   </section>
 
-  <!-- فلاتر الفئات الأربعة -->
-  <nav class="px-3 sm:px-6 py-2 sticky top-[57px] z-30 bg-slate-100/95 backdrop-blur-md border-b border-slate-200/80">
-    <div class="flex gap-2 overflow-x-auto no-scrollbar" id="categoryTabsContainer">
-      <button type="button" onclick="applyCategoryFilter('all', this)" class="cat-pill px-4 py-2 rounded-2xl text-xs sm:text-sm font-black whitespace-nowrap bg-slate-900 text-white shadow-xs">
-        الكل (30)
-      </button>
-      <button type="button" onclick="applyCategoryFilter('needs', this)" class="cat-pill px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap bg-white text-rose-800 border border-rose-200 hover:bg-rose-50">
-        🍎 احتياجات أساسية
-      </button>
-      <button type="button" onclick="applyCategoryFilter('feelings', this)" class="cat-pill px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap bg-white text-amber-800 border border-amber-200 hover:bg-amber-50">
-        😊 مشاعر
-      </button>
-      <button type="button" onclick="applyCategoryFilter('activities', this)" class="cat-pill px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap bg-white text-sky-800 border border-sky-200 hover:bg-sky-50">
-        ⚽ أنشطة ولعب
-      </button>
-      <button type="button" onclick="applyCategoryFilter('social', this)" class="cat-pill px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap bg-white text-purple-800 border border-purple-200 hover:bg-purple-50">
-        💬 ردود وتواصل
-      </button>
-    </div>
+  <!-- فئات التصنيف -->
+  <nav class="flex gap-2 p-3 overflow-x-auto bg-slate-50 border-b border-slate-200">
+    <button onclick="filterCards('all')" class="cat-btn bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap shadow-sm">الكل</button>
+    <button onclick="filterCards('needs')" class="cat-btn bg-white text-rose-700 border border-rose-200 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap">احتياجات أساسية</button>
+    <button onclick="filterCards('feelings')" class="cat-btn bg-white text-amber-700 border border-amber-200 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap">مشاعر</button>
+    <button onclick="filterCards('activities')" class="cat-btn bg-white text-sky-700 border border-sky-200 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap">أنشطة</button>
+    <button onclick="filterCards('social')" class="cat-btn bg-white text-purple-700 border border-purple-200 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap">ردود وتواصل</button>
   </nav>
 
-  <!-- شبكة الـ 30 بطاقة المتجاوبة -->
-  <main class="flex-1 px-3 sm:px-6 py-3 pb-36">
-    <div id="cardsGridContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-      <!-- يتم توليد البطاقات الـ 30 برمجياً -->
-    </div>
+  <!-- شبكة البطاقات (30 بطاقة بالفصحى) -->
+  <main class="flex-1 p-3 pb-28">
+    <div id="gridCards" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"></div>
   </main>
 
-  <!-- شريط الكتابة السريعة وسجل الجمل الأخيرة الثابت في الأسفل -->
-  <footer class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-3 sm:px-6 py-2.5 shadow-2xl">
-    <!-- سجل آخر الجمل المنطوقة -->
-    <div id="recentHistoryRow" class="flex items-center gap-1.5 overflow-x-auto pb-1.5 mb-1.5 no-scrollbar">
-      <span class="text-[11px] font-bold text-slate-400 whitespace-nowrap">سريع:</span>
-      <div id="recentHistoryChips" class="flex items-center gap-1.5"></div>
-    </div>
-
-    <!-- حقل الكتابة وزر النطق والمسح -->
-    <div class="flex items-center gap-2 max-w-4xl mx-auto">
-      <div class="relative flex-1">
-        <input 
-          id="customTextInput" 
-          type="text" 
-          placeholder="اكتب هنا اللي عاوز تقوله..." 
-          class="w-full bg-slate-100 border-2 border-slate-300 rounded-2xl px-4 py-2.5 text-sm sm:text-base font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-amber-500 focus:bg-white transition-all"
-        >
-        <button id="btnClearInput" type="button" onclick="clearCustomInput()" class="hidden absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 font-bold p-1">
-          ✕
-        </button>
-      </div>
-
-      <button type="button" onclick="speakCustomText()" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black px-4 sm:px-5 py-2.5 rounded-2xl shadow-md flex items-center gap-1.5 shrink-0 transition-transform">
+  <!-- شريط الكتابة السريعة والنطق المباشر في الأسفل -->
+  <footer class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-2.5 shadow-2xl z-30">
+    <div class="flex gap-2 max-w-4xl mx-auto">
+      <input type="text" id="customInput" placeholder="اكتب هنا ما تريد قوله..." 
+             class="flex-1 border-2 border-slate-300 rounded-2xl px-4 py-2.5 text-base font-bold focus:outline-none focus:border-indigo-600">
+      <button onclick="speakCustomInput()" class="bg-indigo-600 active:scale-95 text-white px-5 py-2.5 rounded-2xl font-black text-base shadow-md flex items-center gap-1">
         <span>انطق</span> 🔊
+      </button>
+      <button onclick="clearInput()" class="bg-slate-200 text-slate-700 px-3 py-2.5 rounded-2xl font-bold text-sm">
+        مسح
       </button>
     </div>
   </footer>
 
   <script>
-    /* =========================================================================
-       1. قاعدة بيانات الـ 30 بطاقة باللهجة المصرية العامية الكاملة
-       ========================================================================= */
-    const AAC_CARDS = [
-      // الفئة الأولى: احتياجات أساسية (أحمر / برتقالي)
-      { id: 1, text: "عاوز أشرب", speech: "عاوز اشرَب مَيّه", icon: "💧", cat: "needs", bg: "bg-rose-50 border-rose-300 text-rose-950 ring-rose-400" },
-      { id: 2, text: "عاوز آكل", speech: "عاوز اكُل", icon: "🍽️", cat: "needs", bg: "bg-rose-50 border-rose-300 text-rose-950 ring-rose-400" },
-      { id: 3, text: "عاوز أنام", speech: "عاوز انام", icon: "🛏️", cat: "needs", bg: "bg-rose-50 border-rose-300 text-rose-950 ring-rose-400" },
-      { id: 4, text: "عاوز أدخل الحمام", speech: "عاوز ادخل الحمام", icon: "🚽", cat: "needs", bg: "bg-rose-50 border-rose-300 text-rose-950 ring-rose-400" },
-      { id: 5, text: "أنا تعبان", speech: "انا تعبان ومحتاج ارتاح", icon: "🥱", cat: "needs", bg: "bg-rose-50 border-rose-300 text-rose-950 ring-rose-400" },
-      { id: 6, text: "حاجة بتوجعني", speech: "في حاجة بتوجعني اوي", icon: "🩹", cat: "needs", bg: "bg-rose-50 border-rose-300 text-rose-950 ring-rose-400" },
-      { id: 7, text: "عاوز أغسل إيدي", speech: "عاوز اغسل ايدي", icon: "🧼", cat: "needs", bg: "bg-rose-50 border-rose-300 text-rose-950 ring-rose-400" },
-      { id: 8, text: "عاوز أغيّر هدومي", speech: "عاوز اغيّر هدومي", icon: "👕", cat: "needs", bg: "bg-rose-50 border-rose-300 text-rose-950 ring-rose-400" },
+    // قائمة الـ 30 بطاقة الأساسية باللغة العربية الفصحى
+    const cards = [
+      { id: 1, text: "أريد أن أشرب", emoji: "💧", cat: "needs", bg: "bg-rose-50 border-rose-300 text-rose-900" },
+      { id: 2, text: "أريد أن آكل", emoji: "🍽️", cat: "needs", bg: "bg-rose-50 border-rose-300 text-rose-900" },
+      { id: 3, text: "أريد أن أنام", emoji: "🛏️", cat: "needs", bg: "bg-rose-50 border-rose-300 text-rose-900" },
+      { id: 4, text: "أريد الذهاب إلى دورة المياه", emoji: "🚽", cat: "needs", bg: "bg-rose-50 border-rose-300 text-rose-900" },
+      { id: 5, text: "أنا متعب", emoji: "🥱", cat: "needs", bg: "bg-rose-50 border-rose-300 text-rose-900" },
+      { id: 6, text: "أشعر بألم", emoji: "🩹", cat: "needs", bg: "bg-rose-50 border-rose-300 text-rose-900" },
+      { id: 7, text: "أريد غسل يديّ", emoji: "🧼", cat: "needs", bg: "bg-rose-50 border-rose-300 text-rose-900" },
+      { id: 8, text: "أريد تبديل ملابسي", emoji: "👕", cat: "needs", bg: "bg-rose-50 border-rose-300 text-rose-900" },
 
-      // الفئة الثانية: مشاعر (أصفر / عسلي)
-      { id: 9, text: "أنا مبسوط", speech: "انا مبسوط وفرحان", icon: "😄", cat: "feelings", bg: "bg-amber-50 border-amber-300 text-amber-950 ring-amber-400" },
-      { id: 10, text: "أنا زعلان", speech: "انا زعلان", icon: "😢", cat: "feelings", bg: "bg-amber-50 border-amber-300 text-amber-950 ring-amber-400" },
-      { id: 11, text: "أنا خايف", speech: "انا خايف", icon: "😨", cat: "feelings", bg: "bg-amber-50 border-amber-300 text-amber-950 ring-amber-400" },
-      { id: 12, text: "أنا متضايق", speech: "انا متضايق ومش مرتاح", icon: "😠", cat: "feelings", bg: "bg-amber-50 border-amber-300 text-amber-950 ring-amber-400" },
-      { id: 13, text: "بحبك أوي", speech: "بحبك اوي يا روحي", icon: "❤️", cat: "feelings", bg: "bg-amber-50 border-amber-300 text-amber-950 ring-amber-400" },
-      { id: 14, text: "أنا زهقان", speech: "انا زهقان وملان", icon: "😑", cat: "feelings", bg: "bg-amber-50 border-amber-300 text-amber-950 ring-amber-400" },
+      { id: 9, text: "أنا سعيد", emoji: "😊", cat: "feelings", bg: "bg-amber-50 border-amber-300 text-amber-900" },
+      { id: 10, text: "أنا حزين", emoji: "😢", cat: "feelings", bg: "bg-amber-50 border-amber-300 text-amber-900" },
+      { id: 11, text: "أنا خائف", emoji: "😨", cat: "feelings", bg: "bg-amber-50 border-amber-300 text-amber-900" },
+      { id: 12, text: "أنا غاضب", emoji: "😠", cat: "feelings", bg: "bg-amber-50 border-amber-300 text-amber-900" },
+      { id: 13, text: "أنا أحبك", emoji: "❤️", cat: "feelings", bg: "bg-amber-50 border-amber-300 text-amber-900" },
+      { id: 14, text: "أشعر بالملل", emoji: "😐", cat: "feelings", bg: "bg-amber-50 border-amber-300 text-amber-900" },
 
-      // الفئة الثالثة: أنشطة ولعب (أزرق سماوي)
-      { id: 15, text: "عاوز ألعب", speech: "عاوز العب باللعب", icon: "🧸", cat: "activities", bg: "bg-sky-50 border-sky-300 text-sky-950 ring-sky-400" },
-      { id: 16, text: "عاوز أتفرّج ع التلفزيون", speech: "عاوز اتفرّج ع التلفزيون", icon: "📺", cat: "activities", bg: "bg-sky-50 border-sky-300 text-sky-950 ring-sky-400" },
-      { id: 17, text: "عاوز أرسم", speech: "عاوز ارسم والوّن", icon: "🎨", cat: "activities", bg: "bg-sky-50 border-sky-300 text-sky-950 ring-sky-400" },
-      { id: 18, text: "عاوز أسمع مزيكا", speech: "عاوز اسمع مزيكا واغاني", icon: "🎵", cat: "activities", bg: "bg-sky-50 border-sky-300 text-sky-950 ring-sky-400" },
-      { id: 19, text: "عاوز أخرج برّه", speech: "عاوز اخرج برّه الشقة", icon: "🚪", cat: "activities", bg: "bg-sky-50 border-sky-300 text-sky-950 ring-sky-400" },
-      { id: 20, text: "عاوز أروح الجنينة", speech: "عاوز اروح الجنينة العب", icon: "🌳", cat: "activities", bg: "bg-sky-50 border-sky-300 text-sky-950 ring-sky-400" },
-      { id: 21, text: "عاوز حضن", speech: "عاوز حضن كبير", icon: "🫂", cat: "activities", bg: "bg-sky-50 border-sky-300 text-sky-950 ring-sky-400" },
+      { id: 15, text: "أريد أن ألعب", emoji: "🧸", cat: "activities", bg: "bg-sky-50 border-sky-300 text-sky-900" },
+      { id: 16, text: "أريد مشاهدة التلفاز", emoji: "📺", cat: "activities", bg: "bg-sky-50 border-sky-300 text-sky-900" },
+      { id: 17, text: "أريد أن أرسم", emoji: "🎨", cat: "activities", bg: "bg-sky-50 border-sky-300 text-sky-900" },
+      { id: 18, text: "أريد الاستماع إلى الموسيقى", emoji: "🎵", cat: "activities", bg: "bg-sky-50 border-sky-300 text-sky-900" },
+      { id: 19, text: "أريد الخروج", emoji: "🚪", cat: "activities", bg: "bg-sky-50 border-sky-300 text-sky-900" },
+      { id: 20, text: "أريد الذهاب إلى الحديقة", emoji: "🌳", cat: "activities", bg: "bg-sky-50 border-sky-300 text-sky-900" },
+      { id: 21, text: "أريد عناقاً", emoji: "🫂", cat: "activities", bg: "bg-sky-50 border-sky-300 text-sky-900" },
 
-      // الفئة الرابعة: ردود وكلام وتواصل (بنفسجي)
-      { id: 22, text: "آه / أيوه", speech: "ايوه تمام", icon: "👍", cat: "social", bg: "bg-purple-50 border-purple-300 text-purple-950 ring-purple-400" },
-      { id: 23, text: "لأ مش عاوز", speech: "لأ مش عاوز ده", icon: "👎", cat: "social", bg: "bg-purple-50 border-purple-300 text-purple-950 ring-purple-400" },
-      { id: 24, text: "ساعدني لو سمحت", speech: "ساعدني لو سمحت محتاج مساعدة", icon: "🆘", cat: "social", bg: "bg-purple-50 border-purple-300 text-purple-950 ring-purple-400" },
-      { id: 25, text: "استنى شوية", speech: "استنى شوية عليا", icon: "✋", cat: "social", bg: "bg-purple-50 border-purple-300 text-purple-950 ring-purple-400" },
-      { id: 26, text: "خلاص كفاية كده", speech: "خلاص كفاية كده مش عاوز تاني", icon: "🛑", cat: "social", bg: "bg-purple-50 border-purple-300 text-purple-950 ring-purple-400" },
-      { id: 27, text: "تاني كمان مرة", speech: "تاني كمان مرة لو سمحت", icon: "🔁", cat: "social", bg: "bg-purple-50 border-purple-300 text-purple-950 ring-purple-400" },
-      { id: 28, text: "شكراً ليك", speech: "شكراً ليك يا حبيبي", icon: "🙏", cat: "social", bg: "bg-purple-50 border-purple-300 text-purple-950 ring-purple-400" },
-      { id: 29, text: "عاوز ماما", speech: "عاوز ماما", icon: "👩", cat: "social", bg: "bg-purple-50 border-purple-300 text-purple-950 ring-purple-400" },
-      { id: 30, text: "عاوز بابا", speech: "عاوز بابا", icon: "👨", cat: "social", bg: "bg-purple-50 border-purple-300 text-purple-950 ring-purple-400" }
+      { id: 22, text: "نعم", emoji: "👍", cat: "social", bg: "bg-purple-50 border-purple-300 text-purple-900" },
+      { id: 23, text: "لا", emoji: "👎", cat: "social", bg: "bg-purple-50 border-purple-300 text-purple-900" },
+      { id: 24, text: "ساعدني من فضلك", emoji: "🆘", cat: "social", bg: "bg-purple-50 border-purple-300 text-purple-900" },
+      { id: 25, text: "انتظر", emoji: "✋", cat: "social", bg: "bg-purple-50 border-purple-300 text-purple-900" },
+      { id: 26, text: "يكفي هذا", emoji: "🛑", cat: "social", bg: "bg-purple-50 border-purple-300 text-purple-900" },
+      { id: 27, text: "مرة أخرى من فضلك", emoji: "🔁", cat: "social", bg: "bg-purple-50 border-purple-300 text-purple-900" },
+      { id: 28, text: "شكراً لك", emoji: "🙏", cat: "social", bg: "bg-purple-50 border-purple-300 text-purple-900" },
+      { id: 29, text: "أريد أمي", emoji: "👩", cat: "social", bg: "bg-purple-50 border-purple-300 text-purple-900" },
+      { id: 30, text: "أريد أبي", emoji: "👨", cat: "social", bg: "bg-purple-50 border-purple-300 text-purple-900" }
     ];
 
-    // حالة التطبيق
-    let activeFilter = 'all';
-    let currentSentence = [];
-    let recentSpokenHistory = JSON.parse(localStorage.getItem('aac_egyptian_history') || '["عاوز أشرب", "عاوز آكل", "شكراً ليك"]');
-    
-    // متغيرات مشغل الصوت
-    let audioContext = null;
-    let activeAudioTag = null;
-    window._lastUtterance = null; // حماية من خطأ متصفح كروم
+    let sentenceList = [];
+    let currentAudioElement = null;
+    window.currentUtterance = null;
 
-    /* =========================================================================
-       2. نظام فك الصوت التلقائي + نغمة تأكيد لمس البطاقة الفورية
-       ========================================================================= */
-    function initOrResumeAudioContext() {
-      try {
-        if (!audioContext) {
-          const AudioCtx = window.AudioContext || window.webkitAudioContext;
-          if (AudioCtx) audioContext = new AudioCtx();
-        }
-        if (audioContext && audioContext.state === 'suspended') {
-          audioContext.resume();
-        }
-      } catch (err) {
-        console.warn('AudioContext init note:', err);
-      }
+    // تحديث شريط الحالة المرئي
+    function setStatus(msg, type = 'normal') {
+      const bar = document.getElementById('statusBar');
+      bar.textContent = msg;
+      bar.className = 'text-xs py-1 px-3 rounded-lg text-center font-bold transition-colors ';
+      if (type === 'speaking') bar.className += 'bg-amber-100 border border-amber-300 text-amber-900 animate-pulse';
+      else if (type === 'success') bar.className += 'bg-emerald-100 border border-emerald-300 text-emerald-900';
+      else if (type === 'error') bar.className += 'bg-rose-100 border border-rose-300 text-rose-900';
+      else bar.className += 'bg-slate-100 border border-slate-200 text-slate-700';
     }
 
-    // تشغيل نغمة لطيفة وهادئة فوراً عند لمس أي كارت ليعرف الطفل أن لمسته استجابت
-    function playGentleTouchChime() {
-      try {
-        initOrResumeAudioContext();
-        if (!audioContext) return;
-        
-        const now = audioContext.currentTime;
-        const osc = audioContext.createOscillator();
-        const gain = audioContext.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(587.33, now); // نغمة D5 ناعمة
-        osc.frequency.exponentialRampToValueAtTime(880, now + 0.08); // صعود خفيف لـ A5
-
-        gain.gain.setValueAtTime(0.09, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-
-        osc.connect(gain);
-        gain.connect(audioContext.destination);
-
-        osc.start(now);
-        osc.stop(now + 0.13);
-      } catch (e) {
-        // تجاهل أي خطأ دون تعطيل التطبيق
+    // تفعيل الصوت في متصفح الهاتف
+    document.getElementById('btnUnlock').addEventListener('click', () => {
+      document.getElementById('unlockModal').classList.add('hidden');
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.resume();
       }
-    }
+      speak("مرحباً بك في تطبيق كَلِّمْنِي");
+    });
 
-    /* =========================================================================
-       3. محرك النطق المصري الذكي المزدوج (Web Speech + Online Stream)
-       ========================================================================= */
-    function updateStatusIndicator(msg, state = 'normal') {
-      const box = document.getElementById('liveStatusBox');
-      const text = document.getElementById('liveStatusText');
-      const dot = document.getElementById('liveStatusDot');
-      if (!box || !text) return;
+    // المحرك الصوتي الذكي
+    function speak(text) {
+      if (!text || !text.trim()) return;
 
-      text.textContent = msg;
-
-      if (state === 'speaking') {
-        box.className = 'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-950 border border-amber-300 animate-pulse';
-        dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping';
-      } else if (state === 'success') {
-        box.className = 'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-950 border border-emerald-300';
-        dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
-      } else if (state === 'error') {
-        box.className = 'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-rose-100 text-rose-950 border border-rose-300';
-        dot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500';
-      } else {
-        box.className = 'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-slate-100 text-slate-800 border border-slate-300';
-        dot.className = 'w-2.5 h-2.5 rounded-full bg-slate-400';
-      }
-    }
-
-    function speakEgyptian(phraseText) {
-      if (!phraseText || !phraseText.trim()) return;
-      const clean = phraseText.trim();
-
-      // نغمة تأكيد سريعة
-      playGentleTouchChime();
-
-      // اهتزاز لمسي خفيف على الموبايل
-      if (navigator.vibrate) navigator.vibrate(25);
-
-      // إضافة للسجل
-      addPhraseToHistory(clean);
-
-      // إلغاء أي صوت سابق لمنع التداخل
-      if (activeAudioTag) {
-        activeAudioTag.pause();
-        activeAudioTag = null;
+      if (currentAudioElement) {
+        currentAudioElement.pause();
+        currentAudioElement.currentTime = 0;
       }
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         window.speechSynthesis.resume();
       }
 
-      updateStatusIndicator(`بيقول: "${clean}"...`, 'speaking');
+      setStatus(`جارٍ نطق: "${text}"...`, 'speaking');
 
-      // 1. تجربة محرك الهاتف أولاً (Web Speech API)
-      let usedNative = false;
+      let arabicVoice = null;
       if ('speechSynthesis' in window) {
+        const voices = window.speechSynthesis.getVoices();
+        arabicVoice = voices.find(v => v.lang.startsWith('ar'));
+      }
+
+      if (arabicVoice) {
         try {
-          const utter = new SpeechSynthesisUtterance(clean);
-          utter.lang = 'ar-EG';
-          utter.rate = 0.86; // إيقاع مصري هادئ ومناسب للطفل
-          utter.pitch = 1.05;
+          const utter = new SpeechSynthesisUtterance(text);
+          utter.voice = arabicVoice;
+          utter.lang = 'ar-SA';
+          utter.rate = 0.9;
+          window.currentUtterance = utter;
 
-          const voices = window.speechSynthesis.getVoices() || [];
-          const egyptianVoice = voices.find(v => v.lang && (v.lang.toLowerCase().includes('ar-eg') || v.lang.toLowerCase().includes('ar_eg'))) ||
-                                voices.find(v => v.lang && v.lang.toLowerCase().startsWith('ar'));
+          utter.onstart = () => setStatus(`النطق عبر صوت الجهاز 🔊: "${text}"`, 'speaking');
+          utter.onend = () => setStatus(`تم النطق بنجاح ✅`, 'success');
+          utter.onerror = () => fallbackAudioStream(text);
 
-          if (egyptianVoice) utter.voice = egyptianVoice;
-
-          utter.onstart = () => updateStatusIndicator(`بيقول: "${clean}" 🔊`, 'speaking');
-          utter.onend = () => updateStatusIndicator('اتنطقت تمام ✅', 'success');
-          utter.onerror = () => fallbackAudioStream(clean);
-
-          window._lastUtterance = utter;
           window.speechSynthesis.speak(utter);
-          usedNative = true;
-          
-          // مؤقت أمان في حال علّق محرك الهاتف
-          setTimeout(() => {
-            if (document.getElementById('liveStatusText').textContent.includes('بيقول:')) {
-              updateStatusIndicator('جاهز للنطق', 'normal');
-            }
-          }, 3200);
-
           return;
         } catch (e) {
-          console.warn('Native speech error, switching to fallback:', e);
+          console.warn("تعذر استخدام محرك الجهاز، جارٍ الانتقال للصوت البديل...", e);
         }
       }
 
-      // 2. إذا لم يكن محرك الجهاز متاحاً أو فشل، استخدام الرابط الصوتي المباشر
-      if (!usedNative) {
-        fallbackAudioStream(clean);
-      }
+      fallbackAudioStream(text);
     }
 
-    // المسار البديل الصوتي السريع والموثوق
+    // الصوت البديل السحابي
     function fallbackAudioStream(text) {
-      try {
-        updateStatusIndicator(`بيقول بالمصري 🌐: "${text}"`, 'speaking');
-        const url = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=ar&q=${encodeURIComponent(text)}`;
-        const audio = new Audio();
-        audio.referrerPolicy = 'no-referrer';
-        audio.src = url;
-        activeAudioTag = audio;
+      setStatus(`جارٍ النطق عبر الصوت السحابي 🌐: "${text}"`, 'speaking');
+      
+      const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=ar&q=${encodeURIComponent(text)}`;
+      currentAudioElement = new Audio(audioUrl);
 
-        audio.onended = () => updateStatusIndicator('اتنطقت تمام ✅', 'success');
-        audio.onerror = () => updateStatusIndicator('تأكد من فتح الصفحة في Google Chrome', 'error');
+      currentAudioElement.onended = () => {
+        setStatus(`تم النطق بنجاح ✅`, 'success');
+      };
 
-        audio.play().catch(() => {
-          updateStatusIndicator('اضغط على الشاشة لسماع الصوت', 'error');
-        });
-      } catch (err) {
-        updateStatusIndicator('خطأ في تشغيل الصوت', 'error');
-      }
-    }
+      currentAudioElement.onerror = () => {
+        setStatus(`تعذر النطق. يرجى التأكد من الاتصال بالإنترنت أو استخدام متصفح Chrome.`, 'error');
+      };
 
-    function testEgyptianVoice() {
-      speakEgyptian("الصوت شغال تمام التمام بالمصري يا بطل");
-    }
-
-    /* =========================================================================
-       4. رسم وعرض شبكة الـ 30 بطاقة والتفاعل معها
-       ========================================================================= */
-    function renderCardsGrid() {
-      const grid = document.getElementById('cardsGridContainer');
-      if (!grid) return;
-      grid.innerHTML = '';
-
-      const filtered = activeFilter === 'all' 
-        ? AAC_CARDS 
-        : AAC_CARDS.filter(c => c.cat === activeFilter);
-
-      filtered.forEach(card => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.id = `card_btn_${card.id}`;
-        btn.className = `card-touch relative rounded-3xl border-2 p-3 sm:p-4 flex flex-col items-center justify-between text-center cursor-pointer shadow-xs min-h-[142px] sm:min-h-[160px] ${card.bg}`;
-
-        btn.innerHTML = `
-          <div class="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center p-1 rounded-2xl bg-white/80 shadow-inner mb-2 pointer-events-none">
-            <span class="text-4xl sm:text-5xl filter drop-shadow-xs">${card.icon}</span>
-          </div>
-          <span class="font-black text-sm sm:text-base leading-snug pointer-events-none">
-            ${card.text}
-          </span>
-        `;
-
-        // عند الضغط على أي بطاقة: تنطق فوراً وتضاف للجملة دون أي تأخير
-        btn.onclick = () => {
-          btn.classList.add('speaking-card');
-          setTimeout(() => btn.classList.remove('speaking-card'), 450);
-
-          speakEgyptian(card.speech);
-          addCardToSentence(card);
-        };
-
-        grid.appendChild(btn);
+      currentAudioElement.play().catch(err => {
+        console.error("Playback error:", err);
+        setStatus(`يرجى النقر على الشاشة أولاً لتفعيل الصوت.`, 'error');
       });
     }
 
-    /* =========================================================================
-       5. منطق شريط تركيب الجملة المركبة
-       ========================================================================= */
-    function addCardToSentence(card) {
-      currentSentence.push(card);
+    // بناء شبكة البطاقات
+    function renderCards(filter = 'all') {
+      const container = document.getElementById('gridCards');
+      container.innerHTML = '';
+
+      const filtered = filter === 'all' ? cards : cards.filter(c => c.cat === filter);
+
+      filtered.forEach(item => {
+        const btn = document.createElement('button');
+        btn.className = `active-card flex flex-col items-center justify-center p-4 rounded-3xl border-3 shadow-md transition-all duration-150 min-h-[140px] ${item.bg}`;
+        btn.innerHTML = `
+          <span class="text-5xl mb-2 filter drop-shadow-sm pointer-events-none">${item.emoji}</span>
+          <span class="font-black text-lg text-center leading-tight pointer-events-none">${item.text}</span>
+        `;
+        btn.onclick = () => {
+          speak(item.text);
+          addToSentence(item);
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    // إدارة الجملة المركبة
+    function addToSentence(card) {
+      sentenceList.push(card);
       updateSentenceUI();
     }
 
     function updateSentenceUI() {
-      const container = document.getElementById('sentenceBuilderList');
-      const speakBtn = document.getElementById('btnSpeakSentence');
-      if (!container) return;
-
-      if (currentSentence.length === 0) {
-        container.innerHTML = `
-          <span id="sentencePlaceholder" class="text-slate-400 text-xs sm:text-sm font-medium pr-1">
-            اضغط على البطاقات لتجميع جملة هنا (مثال: "عاوز أشرب" + "شكراً ليك")...
-          </span>
-        `;
-        speakBtn.classList.add('hidden');
+      const display = document.getElementById('sentenceDisplay');
+      if (sentenceList.length === 0) {
+        display.innerHTML = '<span class="text-slate-400 text-sm italic">اضغط على البطاقات لتكوين جملة هنا...</span>';
         return;
       }
-
-      speakBtn.classList.remove('hidden');
-      container.innerHTML = '';
-
-      currentSentence.forEach((item, index) => {
-        const chip = document.createElement('div');
-        chip.className = 'flex items-center gap-1 bg-white border border-slate-300 text-slate-800 font-black px-2.5 py-1.5 rounded-xl text-xs sm:text-sm shadow-xs shrink-0';
-        chip.innerHTML = `
-          <span>${item.icon}</span>
-          <span>${item.text}</span>
-          <button type="button" onclick="removeSentenceIndex(${index})" class="text-slate-400 hover:text-rose-600 mr-1 text-xs">✕</button>
-        `;
-        container.appendChild(chip);
-      });
+      display.innerHTML = sentenceList.map(c => `
+        <span class="bg-indigo-50 border border-indigo-200 text-indigo-900 px-3 py-1.5 rounded-xl font-black text-sm whitespace-nowrap shadow-sm flex items-center gap-1">
+          <span>${c.emoji}</span> ${c.text}
+        </span>
+      `).join('');
     }
 
-    function removeSentenceIndex(index) {
-      currentSentence.splice(index, 1);
+    function speakSentence() {
+      if (sentenceList.length === 0) return;
+      const fullText = sentenceList.map(c => c.text).join(' ، ');
+      speak(fullText);
+    }
+
+    function clearSentence() {
+      sentenceList = [];
       updateSentenceUI();
     }
 
-    function undoLastSentenceItem() {
-      if (currentSentence.length > 0) {
-        currentSentence.pop();
-        updateSentenceUI();
-      }
+    // إدخال النص يدوياً
+    function speakCustomInput() {
+      const input = document.getElementById('customInput');
+      const val = input.value.trim();
+      if (val) speak(val);
     }
 
-    function clearFullSentence() {
-      currentSentence = [];
-      updateSentenceUI();
+    function clearInput() {
+      document.getElementById('customInput').value = '';
     }
 
-    function speakCompoundSentence() {
-      if (currentSentence.length === 0) return;
-      const combined = currentSentence.map(c => c.speech).join(' ، و ');
-      speakEgyptian(combined);
-    }
+    document.getElementById('customInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') speakCustomInput();
+    });
 
-    /* =========================================================================
-       6. خانة الكتابة الحرة وسجل العبارات السريعة
-       ========================================================================= */
-    const customInput = document.getElementById('customTextInput');
-    const clearInputBtn = document.getElementById('btnClearInput');
-
-    customInput.oninput = () => {
-      if (customInput.value.trim()) clearInputBtn.classList.remove('hidden');
-      else clearInputBtn.classList.add('hidden');
-    };
-
-    customInput.onkeydown = (e) => {
-      if (e.key === 'Enter') speakCustomText();
-    };
-
-    function clearCustomInput() {
-      customInput.value = '';
-      clearInputBtn.classList.add('hidden');
-    }
-
-    function speakCustomText() {
-      const val = customInput.value.trim();
-      if (val) {
-        speakEgyptian(val);
-      }
-    }
-
-    function addPhraseToHistory(phrase) {
-      if (!phrase) return;
-      recentSpokenHistory = [phrase, ...recentSpokenHistory.filter(p => p !== phrase)].slice(0, 8);
-      localStorage.setItem('aac_egyptian_history', JSON.stringify(recentSpokenHistory));
-      renderHistoryChips();
-    }
-
-    function renderHistoryChips() {
-      const container = document.getElementById('recentHistoryChips');
-      if (!container) return;
-      container.innerHTML = '';
-
-      recentSpokenHistory.forEach(text => {
-        const chip = document.createElement('button');
-        chip.type = 'button';
-        chip.className = 'flex items-center gap-1 bg-slate-100 hover:bg-amber-100 active:scale-95 text-slate-700 hover:text-amber-950 px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap border border-slate-200 transition-all';
-        chip.innerHTML = `<span>🔊</span><span>${text}</span>`;
-        chip.onclick = () => speakEgyptian(text);
-        container.appendChild(chip);
+    // تبديل الفئات
+    function filterCards(cat) {
+      document.querySelectorAll('.cat-btn').forEach(btn => {
+        btn.classList.remove('bg-slate-800', 'text-white');
+        btn.classList.add('bg-white');
       });
+      event.target.classList.remove('bg-white');
+      event.target.classList.add('bg-slate-800', 'text-white');
+      renderCards(cat);
     }
 
-    /* =========================================================================
-       7. فلاتر الفئات والتهيئة التلقائية الفورية
-       ========================================================================= */
-    function applyCategoryFilter(catName, btnElem) {
-      activeFilter = catName;
-
-      document.querySelectorAll('.cat-pill').forEach(btn => {
-        btn.className = 'cat-pill px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-all';
-      });
-
-      if (btnElem) {
-        btnElem.className = 'cat-pill px-4 py-2 rounded-2xl text-xs sm:text-sm font-black whitespace-nowrap bg-slate-900 text-white shadow-xs transition-all';
-      }
-
-      renderCardsGrid();
+    function testSpeech() {
+      speak("نظام الصوت يعمل بنجاح، يمكنك استخدام التطبيق الآن");
     }
 
-    // تفعيل فك حظر الصوت العالمي عند أول لمسة في أي مكان في الصفحة
-    document.addEventListener('pointerdown', () => {
-      initOrResumeAudioContext();
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.resume();
-      }
-    }, { once: true });
+    renderCards();
 
-    // تحميل الأصوات في المتصفح مسبقاً
     if ('speechSynthesis' in window) {
-      window.speechSynthesis.getVoices();
       window.speechSynthesis.onvoiceschanged = () => {
         window.speechSynthesis.getVoices();
       };
     }
-
-    // تشغيل الصفحة مباشرة
-    renderCardsGrid();
-    renderHistoryChips();
   </script>
 </body>
 </html>
